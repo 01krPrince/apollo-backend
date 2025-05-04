@@ -7,8 +7,14 @@ LABEL maintainer="iforg"
 # Make a volume for temporary files
 VOLUME /tmp
 
-# Copy the built jar file into the container
+# Set the working directory
+WORKDIR /app
+
+# Copy the built jar file from the target directory to the container's working directory
 COPY target/*.jar app.jar
 
-# Command to run the Spring Boot app
+# Expose port 8080 to make the app accessible externally
+EXPOSE 8080
+
+# Command to run the Spring Boot application
 ENTRYPOINT ["java", "-jar", "/app.jar"]
