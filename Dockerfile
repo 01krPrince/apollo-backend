@@ -1,20 +1,30 @@
-# Use Java 17 base image
-FROM eclipse-temurin:17-jdk
+# Stage 1: Build the Spring Boot application using Maven
+FROM maven:3.8.6-openjdk-17 AS builder
 
-# Metadata (optional)
-LABEL maintainer="iforg"
+# Set the working directory inside the container
+WORKDIR /app
 
-# Make a volume for temporary files
-VOLUME /tmp
+# Copy the pom.xml and download dependencies (cached layer for faster builds)
+COPY doctor-api/pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Copy the source code
+COPY doctor-api/src ./src
+
+# Build the application, generating the .jar file in /app/target/
+RUN mvn package -DskipTests
+
+# Stage 2: Create the runtime image
+FROM openjdk:17-jdk-slim
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the built jar file from the target directory to the container's working directory
-COPY target/*.jar app.jar
+# Copy the .jar file from the builder stage
+COPY --from=builder /app/target/doctor-api-0.0.1-SNAPSHOT.jar app.jar
 
-# Expose port 8080 to make the app accessible externally
+# Expose the port your Spring Boot app runs on (default is 8080)
 EXPOSE 8080
 
 # Command to run the Spring Boot application
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+CMD ["java", "-jar", "app.jar"]
